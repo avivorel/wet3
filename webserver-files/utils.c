@@ -33,7 +33,6 @@ Queue createQueue(int size){
     queue->tail = NULL;
     queue->currentSize = 0;
     queue->maxSize = size;
-
     return queue;
 }
 
@@ -76,7 +75,7 @@ int dequeue(Queue queue){
     return value;
 }
 
-int queue_find(Queue queue, int value){
+int findInQueue(Queue queue, int value){
     if(isQueueEmpty(queue))
         return -1;
     Node temp = queue->head;
@@ -92,7 +91,7 @@ int queue_find(Queue queue, int value){
     return -1;
 }
 
-int dequeue_index(Queue queue, int index){
+int dequeueByIndex(Queue queue, int index){
     if(isQueueEmpty(queue))
         return -1;
 
