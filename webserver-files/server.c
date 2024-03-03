@@ -23,9 +23,6 @@ pthread_cond_t blockCond;
 Queue requestQueue = NULL;
 Queue workingThreadsQueue = NULL;
 
-//int* thread_static;
-//int* thread_dynamic;
-//int* thread_total;
 
 // Linked list
 // Queue
