@@ -20,6 +20,13 @@
 pthread_mutex_t m;
 pthread_cond_t cond;
 pthread_cond_t blockCond;
+Queue requestQueue = NULL;
+Queue workingThreadsQueue = NULL;
+
+//int* thread_static;
+//int* thread_dynamic;
+//int* thread_total;
+
 // Linked list
 // Queue
 
@@ -35,38 +42,29 @@ void getargs(int *port, int argc, char *argv[])
 }
 
 
-void print_m(void* arg){
+void* threadFunction(void* threadArgs){
 
 }
-
 
 int main(int argc, char *argv[])
 {
     int listenfd, connfd, port, clientlen;
     struct sockaddr_in clientaddr;
     getargs(&port, argc, argv);
-    struct Queue* requestQueue = createLinkedList();
     int threadCount = atoi(argv[1]);
-    pthread_t* threads = (pthread_t*) malloc(threadCount * sizeof(pthread_t));
-
-    for(int i = 0; i < threadCount ; i++){
-        pthread_t t;
-        pthread_create(&t, NULL, print_m, NULL);
+    int requestsCount = atoi(argv[2]);
+    workingThreadsQueue = createQueue(threadCount);
+    requestQueue = createQueue(requestsCount);
+    pthread_t* threads = malloc(sizeof(*threads)*threadCount);
+    for(int i = 0; i< threadCount; i++){
+        int threadArgs[] = {i,};
+        pthread_create(&threads[i], NULL, threadFunction, (void *)threadArgs);
     }
-
-
     listenfd = Open_listenfd(port);
     while (1) {
 	clientlen = sizeof(clientaddr);
 	connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
-
-	// 
-	// HW3: In general, don't handle the request in the main thread.
-	// Save the relevant info in a buffer and have one of the worker threads 
-	// do the work. 
-	// 
 	requestHandle(connfd);
-
 	Close(connfd);
     }
 
