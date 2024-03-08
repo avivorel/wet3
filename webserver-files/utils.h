@@ -22,6 +22,7 @@ int queueCurrentSize(Queue queue);
 bool isFull(Queue queue);
 bool isQueueEmpty(Queue queue);
 void enqueue(Queue queue, int value, struct timeval arrival);
+struct timeval headArrivalTime(Queue queue);
 int dequeue(Queue queue);
 int findInQueue(Queue queue, int value);
 int dequeueByIndex(Queue queue, int index);

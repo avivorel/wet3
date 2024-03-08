@@ -19,12 +19,15 @@
 
 pthread_mutex_t m;
 pthread_cond_t cond;
+pthread_cond_t condWait;
 pthread_cond_t blockCond;
 Queue requestQueue = NULL;
 Queue workingThreadsQueue = NULL;
 
 
-// Linked list
+int* staticThreads;
+int* dynamicThreads;
+int* totalThreads;
 // Queue
 
 
@@ -39,8 +42,32 @@ void getargs(int *port, int argc, char *argv[])
 }
 
 
-void* threadFunction(void* threadArgs){
+_Noreturn void* threadFunction(void* threadArgs){
+    int threadIndex = ((int*)threadArgs)[0];
 
+    while(1){
+        pthread_mutex_lock(&m);
+        //lock -> check if queue empty -> wait if so -> continue
+        while(isQueueEmpty(requestQueue)){
+            pthread_cond_wait(&cond,&m);
+        }
+        struct timeval arrival = headArrivalTime(requestQueue);
+        int fd = dequeue(requestQueue);
+        enqueue(workingThreadsQueue,fd,arrival);
+        pthread_mutex_unlock(&m);
+
+
+        struct timeval handle;
+        gettimeofday(&handle, NULL);
+        // TODO: we need to calc handle-arrival and return it somewhere
+        requestHandle(fd, arrival, handle, staticThreads, dynamicThreads, totalThreads, threadIndex);
+        Close(fd);
+
+        pthread_mutex_lock(&m);
+        dequeueByIndex(workingThreadsQueue,findInQueue(workingThreadsQueue,fd));
+        pthread_cond_signal(&condWait);
+        pthread_mutex_unlock(&m);
+    }
 }
 
 int main(int argc, char *argv[])
@@ -57,11 +84,23 @@ int main(int argc, char *argv[])
         int threadArgs[] = {i,};
         pthread_create(&threads[i], NULL, threadFunction, (void *)threadArgs);
     }
+    dynamicThreads = malloc(sizeof(int)*threadCount);
+    staticThreads = malloc(sizeof(int)*threadCount);
+    totalThreads = malloc(sizeof(int)*threadCount);
+    for(int i =0; i < threadCount; i++){
+        dynamicThreads[i] = 0;
+        staticThreads[i] = 0;
+    }
+
+    pthread_mutex_init(&m, NULL);
+    pthread_cond_init(&cond, NULL);
+    pthread_cond_init(&condWait, NULL);
+
     listenfd = Open_listenfd(port);
     while (1) {
 	clientlen = sizeof(clientaddr);
 	connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
-	requestHandle(connfd);
+	//requestHandle(connfd);
 	Close(connfd);
     }
 

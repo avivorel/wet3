@@ -53,7 +53,7 @@ void enqueue(Queue queue, int value, struct timeval arrival){
     queue->currentSize++;
 }
 
-struct timeval queue_head_arrival_time(Queue queue){
+struct timeval headArrivalTime(Queue queue){
     if(isQueueEmpty(queue))
         return (struct timeval){0};
     return queue->head->arrival;

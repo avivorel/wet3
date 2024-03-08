@@ -101,14 +101,24 @@ void requestGetFiletype(char *filename, char *filetype)
       strcpy(filetype, "text/plain");
 }
 
-void requestServeDynamic(int fd, char *filename, char *cgiargs)
+void requestServeDynamic(int fd, char *filename, char *cgiargs, struct timeval arrival, struct timeval handle_time,
+                         int *static_thread, int *dynamic_thread, int *thread_total, int index_thread)
 {
    char buf[MAXLINE], *emptylist[] = {NULL};
 
    // The server does only a little bit of the header.  
    // The CGI script has to finish writing out the header.
+   //TODO: add same diff as static func
+    struct timeval diff;
+    timersub(&handle_time, &arrival, &diff);
    sprintf(buf, "HTTP/1.0 200 OK\r\n");
    sprintf(buf, "%sServer: OS-HW3 Web Server\r\n", buf);
+   sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, arrival.tv_sec, arrival.tv_usec);
+   sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, diff.tv_sec, diff.tv_usec);
+   sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, index_thread);
+   sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, thread_total[index_thread]);
+   sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, static_thread[index_thread]);
+   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, dynamic_thread[index_thread]);
 
    Rio_writen(fd, buf, strlen(buf));
    int pid = 0;
@@ -123,11 +133,13 @@ void requestServeDynamic(int fd, char *filename, char *cgiargs)
 }
 
 
-void requestServeStatic(int fd, char *filename, int filesize) 
+void requestServeStatic(int fd, char *filename, int filesize, struct timeval arrival, struct timeval handle_time,
+                        int *static_thread, int *dynamic_thread, int *thread_total, int index_thread)
 {
    int srcfd;
    char *srcp, filetype[MAXLINE], buf[MAXBUF];
-
+   struct timeval diff;
+   timersub(&handle_time, &arrival, &diff);
    requestGetFiletype(filename, filetype);
 
    srcfd = Open(filename, O_RDONLY, 0);
@@ -138,10 +150,18 @@ void requestServeStatic(int fd, char *filename, int filesize)
    Close(srcfd);
 
    // put together response
+   //TODO: add diff = timediff(handle -arrival)
+
    sprintf(buf, "HTTP/1.0 200 OK\r\n");
    sprintf(buf, "%sServer: OS-HW3 Web Server\r\n", buf);
    sprintf(buf, "%sContent-Length: %d\r\n", buf, filesize);
    sprintf(buf, "%sContent-Type: %s\r\n\r\n", buf, filetype);
+   sprintf(buf, "%sStat-Req-Arrival:: %lu.%06lu\r\n", buf, arrival.tv_sec, arrival.tv_usec);
+   sprintf(buf, "%sStat-Req-Dispatch:: %lu.%06lu\r\n", buf, diff.tv_sec, diff.tv_usec);
+   sprintf(buf, "%sStat-Thread-Id:: %d\r\n", buf, index_thread);
+   sprintf(buf, "%sStat-Thread-Count:: %d\r\n", buf, thread_total[index_thread]);
+   sprintf(buf, "%sStat-Thread-Static:: %d\r\n", buf, static_thread[index_thread]);
+   sprintf(buf, "%sStat-Thread-Dynamic:: %d\r\n\r\n", buf, dynamic_thread[index_thread]);
 
    Rio_writen(fd, buf, strlen(buf));
 
@@ -152,7 +172,8 @@ void requestServeStatic(int fd, char *filename, int filesize)
 }
 
 // handle a request
-void requestHandle(int fd)
+void requestHandle(int fd, struct timeval arrival, struct timeval handle_time, int *static_thread, int *dynamic_thread,
+                   int *thread_total, int index_thread)
 {
 
    int is_static;
@@ -181,15 +202,21 @@ void requestHandle(int fd)
 
    if (is_static) {
       if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
+          thread_total[index_thread]++;
          requestError(fd, filename, "403", "Forbidden", "OS-HW3 Server could not read this file");
          return;
       }
+      thread_total[index_thread]++;
+      static_thread[index_thread]++;
       requestServeStatic(fd, filename, sbuf.st_size);
    } else {
       if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
+          thread_total[index_thread]++;
          requestError(fd, filename, "403", "Forbidden", "OS-HW3 Server could not run this CGI program");
          return;
       }
+       thread_total[index_thread]++;
+       dynamic_thread[index_thread]++;
       requestServeDynamic(fd, filename, cgiargs);
    }
 }
