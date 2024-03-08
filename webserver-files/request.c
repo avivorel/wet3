@@ -196,6 +196,7 @@ void requestHandle(int fd, struct timeval arrival, struct timeval handle_time, i
 
    is_static = requestParseURI(uri, filename, cgiargs);
    if (stat(filename, &sbuf) < 0) {
+       thread_total[index_thread]++;
       requestError(fd, filename, "404", "Not found", "OS-HW3 Server could not find this file");
       return;
    }
