@@ -1,10 +1,10 @@
 #include "segel.h"
 #include "request.h"
-#include "utils.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
+#include "utils.h"
 
 // 
 // server.c: A very, very simple web server

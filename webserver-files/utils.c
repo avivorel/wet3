@@ -94,7 +94,7 @@ int dequeueByIndex(Queue queue, int index){
     if(isQueueEmpty(queue))
         return -1;
 
-    if(index < 0 || index >= queue_size(queue))
+    if(index < 0 || index >= queueCurrentSize(queue))
         return -1;
 
     if(index == 0){
@@ -111,7 +111,7 @@ int dequeueByIndex(Queue queue, int index){
     int value = toRemove->data;
     previous->next = toRemove->next;
     free(toRemove);
-    if(index == queue_size(queue) - 1){
+    if(index == queueCurrentSize(queue) - 1){
         queue->tail = previous;
     }
     queue->currentSize--;
@@ -120,7 +120,7 @@ int dequeueByIndex(Queue queue, int index){
 }
 
 int queueCurrentSize(Queue queue){
-    return queue->current_size;
+    return queue->currentSize;
 }
 
 void freeQueue(Queue queue){
@@ -138,7 +138,7 @@ void freeQueue(Queue queue){
 int isFull(Queue queue){
     if( queue->currentSize == queue->maxSize)
         return 1;
-    return 0
+    return 0;
 }
 
 int isQueueEmpty(Queue queue){
