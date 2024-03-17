@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "utils.h"
 #include <stdlib.h>
-#include <stdbool.h>
 
 
 
@@ -136,10 +135,14 @@ void freeQueue(Queue queue){
 }
 
 
-bool isFull(Queue queue){
-    return queue->currentSize == queue->maxSize;
+int isFull(Queue queue){
+    if( queue->currentSize == queue->maxSize)
+        return 1;
+    return 0
 }
 
-bool isQueueEmpty(Queue queue){
-    return queue->currentSize == 0;
+int isQueueEmpty(Queue queue){
+    if( queue->currentSize == 0)
+        return 1;
+    return 0;
 }

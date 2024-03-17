@@ -98,12 +98,53 @@ int main(int argc, char *argv[])
 
     listenfd = Open_listenfd(port);
     while (1) {
-	clientlen = sizeof(clientaddr);
-	connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
-	//requestHandle(connfd);
-	Close(connfd);
-    }
+        clientlen = sizeof(clientaddr);
+        connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
+        pthread_mutex_lock(&m);
+        if(queueCurrentSize(workingThreadsQueue) + queueCurrentSize(requestQueue) == requestsCount){
+            if(strcmp(argv[4], "block") == 0){
+                while(queueCurrentSize(workingThreadsQueue) + queueCurrentSize(requestQueue) == requestsCount){
+                    pthread_cond_wait(&blockCond, &m);
+                }
+            } else if(strcmp(argv[4], "dh") == 0){
+                if(isQueueEmpty(requestQueue)){
+                    Close(connfd);
+                    pthread_mutex_unlock(&m);
+                    continue;
+                }
+                else {
+                    int fd = dequeue(requestQueue);
+                    Close(fd);
+                }
+            } else if(strcmp(argv[4], "random") == 0){
+                if(isQueueEmpty(requestQueue)){
+                    Close(connfd);
+                    pthread_mutex_unlock(&m);
+                    continue;
+                }
+                else {
+                    int num_to_drop = (int)((queueCurrentSize(requestQueue) + 1) / 2);
+                    for(int i = 0; i < num_to_drop; i++) {
+                        if(isQueueEmpty(requestQueue))
+                            break;
+                        int random_index = rand() % queueCurrentSize(requestQueue);
+                        int fd = dequeueByIndex(requestQueue, random_index);
+                        Close(fd);
+                    }
+                }
+            } else if(strcmp(argv[4], "dt") == 0){
+                Close(connfd);
+                pthread_mutex_unlock(&m);
+                continue;
+            }
+        }
+        struct timeval arrival;
+        gettimeofday(&arrival,NULL);
 
+        enqueue(requestQueue, connfd, arrival);
+        pthread_cond_signal(&cond);
+        pthread_mutex_unlock(&m);
+    }
 }
 
 

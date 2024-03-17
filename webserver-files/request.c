@@ -209,7 +209,8 @@ void requestHandle(int fd, struct timeval arrival, struct timeval handle_time, i
       }
       thread_total[index_thread]++;
       static_thread[index_thread]++;
-      requestServeStatic(fd, filename, sbuf.st_size);
+       requestServeStatic(fd, filename, sbuf.st_size, arrival, handle_time, static_thread, dynamic_thread, thread_total,
+                          index_thread);
    } else {
       if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
           thread_total[index_thread]++;
@@ -218,7 +219,8 @@ void requestHandle(int fd, struct timeval arrival, struct timeval handle_time, i
       }
        thread_total[index_thread]++;
        dynamic_thread[index_thread]++;
-      requestServeDynamic(fd, filename, cgiargs);
+       requestServeDynamic(fd, filename, cgiargs, arrival, handle_time, static_thread, dynamic_thread, thread_total,
+                           index_thread);
    }
 }
 
